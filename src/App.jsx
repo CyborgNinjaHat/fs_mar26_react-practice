@@ -1,7 +1,7 @@
 /* eslint-disable jsx-a11y/accessible-emoji */
 import React, { useState } from 'react';
-import './App.scss';
 import classNames from 'classnames';
+import './App.scss';
 
 import usersFromServer from './api/users';
 import categoriesFromServer from './api/categories';
@@ -25,13 +25,22 @@ const products = productsFromServer.map(product => {
 
 const HEADERS = ['ID', 'Product', 'Category', 'User'];
 
-const getPreparedProducts = (productsList, { selectedUser, query }) => {
+const getPreparedProducts = (
+  productsList,
+  { selectedUser, selectedCategories, query },
+) => {
   let preparedProducts = [...productsList];
 
   if (selectedUser) {
-    preparedProducts = preparedProducts.filter(
-      product => product.user.name === selectedUser.name,
-    );
+    preparedProducts = preparedProducts.filter(product => {
+      return product.user.name === selectedUser.name;
+    });
+  }
+
+  if (selectedCategories.length !== 0) {
+    preparedProducts = preparedProducts.filter(product => {
+      return selectedCategories.includes(product.category.id);
+    });
   }
 
   if (query) {
@@ -47,17 +56,31 @@ const getPreparedProducts = (productsList, { selectedUser, query }) => {
 
 export const App = () => {
   const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const [query, setQuery] = useState('');
 
-  const isModified = selectedUser || query !== '';
+  const handleSelectCategories = selectedCategory => {
+    if (!selectedCategories.includes(selectedCategory)) {
+      return setSelectedCategories([...selectedCategories, selectedCategory]);
+    }
+
+    return setSelectedCategories(
+      selectedCategories.filter(category => category !== selectedCategory),
+    );
+  };
 
   const handleResetFilters = () => {
     setSelectedUser(null);
+    setSelectedCategories([]);
     setQuery('');
   };
 
+  const isModified =
+    selectedUser || query !== '' || selectedCategories.length !== 0;
+
   const preparedProducts = getPreparedProducts(products, {
     selectedUser,
+    selectedCategories,
     query,
   });
 
@@ -130,33 +153,27 @@ export const App = () => {
               <a
                 href="#/"
                 data-cy="AllCategories"
-                className="button is-success mr-6 is-outlined"
+                className={classNames('button is-success mr-6', {
+                  'is-outlined': selectedCategories.length !== 0,
+                })}
+                onClick={() => setSelectedCategories([])}
               >
                 All
               </a>
 
-              <a
-                data-cy="Category"
-                className="button mr-2 my-1 is-info"
-                href="#/"
-              >
-                Category 1
-              </a>
-
-              <a data-cy="Category" className="button mr-2 my-1" href="#/">
-                Category 2
-              </a>
-
-              <a
-                data-cy="Category"
-                className="button mr-2 my-1 is-info"
-                href="#/"
-              >
-                Category 3
-              </a>
-              <a data-cy="Category" className="button mr-2 my-1" href="#/">
-                Category 4
-              </a>
+              {categoriesFromServer.map(category => (
+                <a
+                  key={category.id}
+                  data-cy="Category"
+                  href="#/"
+                  className={classNames('button mr-2 my-1', {
+                    'is-info': selectedCategories.includes(category.id),
+                  })}
+                  onClick={() => handleSelectCategories(category.id)}
+                >
+                  {category.title}
+                </a>
+              ))}
             </div>
 
             <div className="panel-block">
@@ -164,7 +181,7 @@ export const App = () => {
                 data-cy="ResetAllButton"
                 href="#/"
                 className={classNames('button is-link is-fullwidth', {
-                  'is-outlined': !isModified,
+                  'is-outlined': isModified,
                 })}
                 onClick={handleResetFilters}
               >
