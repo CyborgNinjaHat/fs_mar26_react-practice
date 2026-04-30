@@ -49,6 +49,13 @@ export const App = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [query, setQuery] = useState('');
 
+  const isModified = selectedUser || query !== '';
+
+  const handleResetFilters = () => {
+    setSelectedUser(null);
+    setQuery('');
+  };
+
   const preparedProducts = getPreparedProducts(products, {
     selectedUser,
     query,
@@ -156,7 +163,10 @@ export const App = () => {
               <a
                 data-cy="ResetAllButton"
                 href="#/"
-                className="button is-link is-outlined is-fullwidth"
+                className={classNames('button is-link is-fullwidth', {
+                  'is-outlined': !isModified,
+                })}
+                onClick={handleResetFilters}
               >
                 Reset all filters
               </a>
