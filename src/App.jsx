@@ -27,7 +27,7 @@ const HEADERS = ['ID', 'Product', 'Category', 'User'];
 
 const getPreparedProducts = (
   productsList,
-  { selectedUser, selectedCategories, query },
+  { selectedUser, selectedCategories, query, sort },
 ) => {
   let preparedProducts = [...productsList];
 
@@ -51,6 +51,27 @@ const getPreparedProducts = (
     });
   }
 
+  if (sort.column !== 'none') {
+    preparedProducts.sort((first, second) => {
+      switch (sort.column) {
+        case 'ID':
+          return first.id - second.id;
+        case 'Product':
+          return first.name.localeCompare(second.name);
+        case 'Category':
+          return first.category.title.localeCompare(second.category.title);
+        case 'User':
+          return first.user.name.localeCompare(second.user.name);
+        default:
+          return 0;
+      }
+    });
+  }
+
+  if (sort.isReversed) {
+    preparedProducts.reverse();
+  }
+
   return preparedProducts;
 };
 
@@ -58,6 +79,7 @@ export const App = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [query, setQuery] = useState('');
+  const [sort, setSort] = useState({ column: 'none', isReversed: false });
 
   const handleSelectCategories = selectedCategory => {
     if (!selectedCategories.includes(selectedCategory)) {
@@ -69,19 +91,36 @@ export const App = () => {
     );
   };
 
+  const handleSelectSort = header => {
+    if (sort.column !== header) {
+      return setSort({ column: header, isReversed: false });
+    }
+
+    if (!sort.isReversed) {
+      return setSort({ column: header, isReversed: true });
+    }
+
+    return setSort({ column: 'none', isReversed: false });
+  };
+
   const handleResetFilters = () => {
     setSelectedUser(null);
     setSelectedCategories([]);
     setQuery('');
+    setSort({ column: 'none', isReversed: false });
   };
 
   const isModified =
-    selectedUser || query !== '' || selectedCategories.length !== 0;
+    selectedUser ||
+    query !== '' ||
+    selectedCategories.length !== 0 ||
+    sort.column !== 'none';
 
   const preparedProducts = getPreparedProducts(products, {
     selectedUser,
     selectedCategories,
     query,
+    sort,
   });
 
   return (
@@ -204,12 +243,21 @@ export const App = () => {
               <thead>
                 <tr>
                   {HEADERS.map(header => (
-                    <th>
+                    <th key={header}>
                       <span className="is-flex is-flex-wrap-nowrap">
                         {header}
-                        <a href="#/">
+                        <a href="#/" onClick={() => handleSelectSort(header)}>
                           <span className="icon">
-                            <i data-cy="SortIcon" className="fas fa-sort" />
+                            <i
+                              data-cy="SortIcon"
+                              className={classNames('fas', {
+                                'fa-sort': sort.column !== header,
+                                'fa-sort-up':
+                                  sort.column === header && !sort.isReversed,
+                                'fa-sort-down':
+                                  sort.column === header && sort.isReversed,
+                              })}
+                            />
                           </span>
                         </a>
                       </span>
